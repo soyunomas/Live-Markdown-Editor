@@ -10,6 +10,9 @@ Una aplicación web simple, del lado del cliente, para escribir Markdown y previ
 
 ---
 
+![Captura de pantalla](screenshot-1.png)
+
+---
 ## ✨ Características
 
 *   ✒️ Edición de Markdown con previsualización HTML instantánea lado a lado.
