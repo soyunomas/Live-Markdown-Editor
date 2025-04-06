@@ -1,257 +1,460 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Markdown Editor</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-    <!-- Marked.js (Markdown Parser) -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
+    <title>Temporizador Pomodoro Configurable</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        /* CSS Incrustado */
-        body {
-            padding-top: 1rem;
+        #time-left {
+            font-weight: 300;
         }
-        #markdown-input, #html-output {
-            min-height: 70vh;
-            height: 70vh;
-            overflow-y: auto;
-            font-family: monospace; /* Input siempre monoespaciado */
-            font-size: 0.9rem; /* Un poco más pequeño para caber más */
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 350px;
         }
-        #html-output {
-            border: 1px solid #dee2e6;
-            padding: 1rem;
-            transition: background-color 0.3s, color 0.3s; /* Transición suave de tema */
+        /* Estilo para botones de icono */
+        .icon-button {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+        #settings-section label {
+            margin-bottom: 0.25rem;
+        }
+        #settings-section .form-select {
+            margin-bottom: 0.75rem;
         }
 
-        /* --- Temas para Previsualización --- */
-
-        /* Tema Claro (Default) */
-        #html-output.theme-light {
-            background-color: #f8f9fa;
-            color: #212529;
-            font-family: sans-serif;
-            border-color: #dee2e6;
+        /* Estilos para parpadeo */
+        body.is-flashing {
+            /* Transición suave para el cambio de color */
+            transition: background-color 0.2s ease-in-out !important;
         }
-        #html-output.theme-light a { color: #0d6efd; }
-        #html-output.theme-light code { color: #d63384; background-color: rgba(0,0,0,0.05); padding: 0.2em 0.4em; border-radius: 3px; }
-        #html-output.theme-light pre { background-color: #e9ecef; border: 1px solid #ced4da; color: #212529; }
-        #html-output.theme-light pre code { background-color: transparent; color: inherit; padding: 0; border-radius: 0;}
-        #html-output.theme-light table { color: #212529; border-collapse: collapse; }
-        #html-output.theme-light th, #html-output.theme-light td { border: 1px solid #dee2e6; padding: 0.5rem; }
-        #html-output.theme-light thead th { border-bottom-width: 2px; }
-        #html-output.theme-light blockquote { border-left: 0.25rem solid #dee2e6; padding-left: 1rem; color: #6c757d; margin-left: 0; }
-
-        /* Tema Oscuro */
-        #html-output.theme-dark {
-            background-color: #212529;
-            color: #dee2e6;
-            font-family: sans-serif;
-            border-color: #495057;
+        body.is-flashing.flash-active {
+            /* Color de fondo durante el parpadeo activo (se adapta a tema claro/oscuro) */
+            background-color: var(--bs-warning-bg-subtle) !important;
         }
-        #html-output.theme-dark a { color: #6ea8fe; }
-        #html-output.theme-dark code { color: #e83e8c; background-color: rgba(255,255,255,0.1); padding: 0.2em 0.4em; border-radius: 3px;}
-        #html-output.theme-dark pre { background-color: #343a40; border: 1px solid #495057; color: #dee2e6; }
-        #html-output.theme-dark pre code { background-color: transparent; color: inherit; padding: 0; border-radius: 0;}
-        #html-output.theme-dark table { color: #dee2e6; border-collapse: collapse; }
-        #html-output.theme-dark th, #html-output.theme-dark td { border: 1px solid #495057; padding: 0.5rem; }
-        #html-output.theme-dark thead th { border-bottom: 2px solid #adb5bd; }
-        #html-output.theme-dark blockquote { border-left: 0.25rem solid #495057; padding-left: 1rem; color: #adb5bd; margin-left: 0; }
-
-        /* Tema GitHub (Simplificado) */
-        #html-output.theme-github {
-            background-color: #ffffff;
-            color: #24292f;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-            border: 1px solid #d0d7de;
-            border-radius: 6px;
-        }
-        #html-output.theme-github a { color: #0969da; }
-        #html-output.theme-github code { font-family: monospace; background-color: rgba(175,184,193,0.2); color: #24292f; padding: 0.2em 0.4em; border-radius: 6px; font-size: 85%;}
-        #html-output.theme-github pre { font-family: monospace; font-size: 85%; background-color: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; padding: 16px; overflow: auto; color: #24292f; }
-        #html-output.theme-github pre code { background-color: transparent; color: inherit; padding: 0; border-radius: 0; font-size: 100%; }
-        #html-output.theme-github table { color: #24292f; border-collapse: collapse; display: block; width: max-content; max-width: 100%; overflow: auto;}
-        #html-output.theme-github th, #html-output.theme-github td { border: 1px solid #d0d7de; padding: 6px 13px; }
-        #html-output.theme-github tr { background-color: #ffffff; border-top: 1px solid #d0d7de;}
-        #html-output.theme-github tr:nth-child(2n) { background-color: #f6f8fa; }
-        #html-output.theme-github thead th { border-bottom-width: 1px; font-weight: 600;} /* Thicker not needed with bg */
-        #html-output.theme-github blockquote { border-left: 0.25em solid #d0d7de; padding: 0 1em; color: #57606a; margin-left: 0; }
-        #html-output.theme-github hr { height: .25em; padding: 0; margin: 24px 0; background-color: #d0d7de; border: 0; }
-        #html-output.theme-github h1, #html-output.theme-github h2 { border-bottom: 1px solid #d0d7de; padding-bottom: .3em; }
-
-
-        /* Ajustes generales para elementos HTML generados */
-        #html-output > *:first-child { margin-top: 0 !important; }
-        #html-output table { width: 100%; margin-bottom: 1rem; }
-        #html-output code:not(pre code) { word-wrap: break-word; }
-        #html-output pre { padding: 1rem; margin-bottom: 1rem; display: block; border-radius: 0.25rem; overflow: auto; }
-        #html-output img { max-width: 100%; height: auto; } /* Imágenes responsivas */
-
-        /* Estilo para botones de copia */
-        .copy-button { min-width: 130px; } /* Ancho mínimo para que quepa "¡Copiado!" */
     </style>
 </head>
 <body>
+    <!-- Contenedor para botones de icono en la esquina -->
+    <div class="position-fixed top-0 end-0 m-3 d-flex">
+        <!-- Botón para cambiar tema -->
+        <button id="theme-toggle-button" class="btn icon-button border-0 me-2" title="Cambiar tema">
+            <i class="bi bi-moon-stars-fill"></i>
+        </button>
+        <!-- Botón para abrir/cerrar ajustes -->
+        <button id="settings-toggle-button" class="btn icon-button border-0" type="button" data-bs-toggle="collapse" data-bs-target="#settingsCollapse" aria-expanded="false" aria-controls="settingsCollapse" title="Ajustes">
+            <i class="bi bi-gear-fill"></i>
+        </button>
+    </div>
 
-    <div class="container-fluid">
-        <h1 class="text-center mb-4">Live Markdown Editor</h1>
 
-        <div class="row g-3"> <!-- g-3 añade espacio entre columnas -->
-            <!-- Columna de Entrada Markdown -->
-            <div class="col-md-6 d-flex flex-column">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <label for="markdown-input" class="form-label fw-bold mb-0">Entrada Markdown</label>
-                    <button id="copy-md-button" class="btn btn-secondary btn-sm copy-button">Copiar Markdown</button>
-                </div>
-                <textarea id="markdown-input" class="form-control flex-grow-1" placeholder="Escribe tu Markdown aquí..."></textarea>
-            </div>
-
-            <!-- Columna de Salida HTML -->
-            <div class="col-md-6 d-flex flex-column">
-                 <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2"> <!-- flex-wrap y gap para mejor responsividad -->
-                    <label for="html-output" class="form-label fw-bold mb-0 me-2">Previsualización HTML</label>
-                    <div class="d-flex align-items-center gap-2">
-                        <select id="theme-selector" class="form-select form-select-sm" style="width: auto;"> <!-- Ancho automático -->
-                            <option value="light" selected>Claro</option>
-                            <option value="dark">Oscuro</option>
-                            <option value="github">GitHub</option>
-                        </select>
-                        <button id="copy-html-button" class="btn btn-info btn-sm copy-button">Copiar HTML</button>
-                        <button id="save-html-button" class="btn btn-success btn-sm">Guardar HTML</button>
+    <div class="container">
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-8 col-lg-6">
+                <!-- Sección de Ajustes Colapsable -->
+                <div class="collapse mb-3" id="settingsCollapse">
+                    <div class="card card-body bg-body-tertiary" id="settings-section">
+                        <h5 class="mb-3 text-center">Ajustes duración trabajo y descansos</h5>
+                        <div class="row">
+                            <div class="col-sm-4">
+                                <label for="pomodoro-duration-select" class="form-label">Trabajo (min)</label>
+                                <select class="form-select form-select-sm" id="pomodoro-duration-select">
+                                    <option value="300">5</option>
+                                    <option value="600">10</option>
+                                    <option value="900">15</option>
+                                    <option value="1200">20</option>
+                                    <option value="1500">25</option>
+                                    <option value="1800">30</option>
+                                    <option value="2100">35</option>
+                                    <option value="2400">40</option>
+                                    <option value="2700">45</option>
+                                    <option value="3000">50</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-4">
+                                <label for="short-break-duration-select" class="form-label">Desc. Corto (min)</label>
+                                <select class="form-select form-select-sm" id="short-break-duration-select">
+                                    <option value="300">5</option>
+                                    <option value="420">7</option>
+                                    <option value="600">10</option>
+                                    <option value="900">15</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-4">
+                                <label for="long-break-duration-select" class="form-label">Desc. Largo (min)</label>
+                                <select class="form-select form-select-sm" id="long-break-duration-select">
+                                    <option value="300">5</option>
+                                    <option value="600">10</option>
+                                    <option value="900">15</option>
+                                    <option value="1200">20</option>
+                                    <option value="1500">25</option>
+                                    <option value="1800">30</option>
+                                </select>
+                            </div>
+                        </div>
+                         <small class="text-muted text-center mt-2">Los cambios se aplican al reiniciar o al iniciar el próximo ciclo correspondiente.</small>
                     </div>
-                 </div>
-                <div id="html-output" class="flex-grow-1 theme-light"> <!-- Aplicar tema inicial aquí -->
-                    <!-- El HTML renderizado aparecerá aquí -->
+                </div>
+                <!-- Fin Sección de Ajustes -->
+
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h1 class="card-title text-center mb-4">Temporizador Pomodoro</h1>
+
+                        <div class="text-center">
+                            <h5 id="timer-label">¡Listo para empezar!</h5>
+                        </div>
+
+                        <div id="time-left" class="display-1 text-center my-4">
+                            25:00
+                        </div>
+
+                        <div class="text-center mb-4">
+                            <button id="start-pause-button" class="btn btn-primary btn-lg">Iniciar</button>
+                            <button id="reset-button" class="btn btn-secondary btn-lg ms-2">Reiniciar</button>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <small id="pomodoro-count" class="text-muted">Pomodoros completados: 0</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap 5 JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <!-- Elemento Audio -->
+    <!-- <audio id="alert-sound" src="alert.mp3" loop></audio> -->
 
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <!-- JavaScript Personalizado -->
     <script>
-        // JavaScript Incrustado
-        const markdownInput = document.getElementById('markdown-input');
-        const htmlOutput = document.getElementById('html-output');
-        const saveButton = document.getElementById('save-html-button');
-        const copyHtmlButton = document.getElementById('copy-html-button');
-        const copyMdButton = document.getElementById('copy-md-button');
-        const themeSelector = document.getElementById('theme-selector');
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Configuración Inicial (Defaults) ---
+            let pomodoroDurationSetting = 1500;
+            let shortBreakDurationSetting = 300;
+            let longBreakDurationSetting = 900;
 
-        // --- Funciones ---
+            const POMODOROS_PER_LONG_BREAK = 4;
+            const ALERT_SOUND_SRC = 'alert.mp3';
+            // const FLASH_DURATION = 4000; // Ya no se usa
+            const FLASH_INTERVAL_MS = 400;
 
-        // Actualizar previsualización
-        function updatePreview() {
-            const markdownText = markdownInput.value;
-            htmlOutput.innerHTML = marked.parse(markdownText, { breaks: true, gfm: true });
-        }
+            // --- Referencias al DOM ---
+            const timerLabelEl = document.getElementById('timer-label');
+            const timeLeftEl = document.getElementById('time-left');
+            const startPauseButton = document.getElementById('start-pause-button');
+            const resetButton = document.getElementById('reset-button');
+            const pomodoroCountEl = document.getElementById('pomodoro-count');
+            const themeToggleButton = document.getElementById('theme-toggle-button');
+            const settingsToggleButton = document.getElementById('settings-toggle-button');
+            const pomodoroDurationSelect = document.getElementById('pomodoro-duration-select');
+            const shortBreakDurationSelect = document.getElementById('short-break-duration-select');
+            const longBreakDurationSelect = document.getElementById('long-break-duration-select');
+            const htmlElement = document.documentElement;
+            const bodyElement = document.body;
+            const themeIcon = themeToggleButton.querySelector('i');
 
-        // Guardar HTML a archivo
-        function saveHtmlToFile() {
-            const htmlContent = htmlOutput.innerHTML;
-            // Incluir estilos del tema actual en el archivo guardado
-            const currentTheme = themeSelector.value;
-            const themeLink = currentTheme === 'dark' ? '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-dark-5@1.1.3/dist/css/bootstrap-dark.min.css">' : '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">';
-            // Usar los estilos definidos aquí para GitHub o un CSS básico si es necesario
-            // Opcionalmente, podríamos extraer los estilos del <style> tag, pero es complejo.
-            // Por simplicidad, enlazamos Bootstrap y añadimos estilos básicos inline
-            const fileStyles = `
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { padding: 2rem; }
-        /* Añadir aquí estilos básicos para tablas, code, pre si se desea independencia de bootstrap */
-        table { width: 100%; margin-bottom: 1rem; border-collapse: collapse; }
-        th, td { padding: 0.75rem; vertical-align: top; border-top: 1px solid #dee2e6; }
-        thead th { vertical-align: bottom; border-bottom: 2px solid #dee2e6; }
-        tbody + tbody { border-top: 2px solid #dee2e6; }
-        code { font-size: 0.875em; color: #d63384; word-wrap: break-word; }
-        pre code { color: inherit; font-size: inherit; }
-        pre { display: block; padding: 1rem; font-size: 0.875rem; color: #212529; background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 0.25rem; overflow: auto; }
-        img { max-width: 100%; height: auto; }
-        blockquote { border-left: 0.25rem solid #dee2e6; padding-left: 1rem; color: #6c757d; margin-left: 0; }
-        /* Podríamos intentar aplicar estilos de tema aquí, pero se complica */
-        ${currentTheme === 'dark' ? `body { background-color: #212529; color: #dee2e6; } table, th, td, thead th, tbody + tbody, pre, blockquote { border-color: #495057; } pre { background-color: #343a40; color: #dee2e6; } code { color: #e83e8c; } blockquote { color: #adb5bd;}` : ''}
-        ${currentTheme === 'github' ? `body {font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: #24292f;} /* Estilos GitHub simplificados */` : ''}
-    </style>`;
+            // --- Iconos Tema ---
+            const moonIconClass = 'bi-moon-stars-fill';
+            const sunIconClass = 'bi-sun-fill';
 
-            const fullHtml = `<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Export</title>
-    ${fileStyles}
-</head>
-<body class="${currentTheme === 'dark' ? 'bg-dark text-light' : ''}">
-    <div class="container">
-        ${htmlContent}
-    </div>
-</body>
-</html>`;
-
-            const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'markdown_preview.html';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-
-        // Copiar contenido al portapapeles y dar feedback
-        async function copyToClipboard(text, buttonElement) {
-            const originalText = buttonElement.textContent;
+            // --- Audio ---
+            let alertSound;
             try {
-                await navigator.clipboard.writeText(text);
-                buttonElement.textContent = '¡Copiado!';
-                // Considerar añadir un icono de check temporalmente
-                setTimeout(() => {
-                    buttonElement.textContent = originalText;
-                }, 1500); // Volver al texto original después de 1.5 segundos
-            } catch (err) {
-                console.error('Error al copiar al portapapeles:', err);
-                buttonElement.textContent = 'Error al copiar';
-                 setTimeout(() => {
-                    buttonElement.textContent = originalText;
-                }, 2000);
-                // Podríamos mostrar un alert o tooltip de error
+                alertSound = new Audio(ALERT_SOUND_SRC);
+                alertSound.loop = true;
+            } catch (e) {
+                console.error("No se pudo inicializar el objeto Audio.", e);
+                alertSound = { play: () => {}, pause: () => {}, currentTime: 0 };
             }
-        }
+            let isSoundPlaying = false;
+            let audioPrimed = false;
 
-        // Copiar HTML generado
-        function copyHtml() {
-            copyToClipboard(htmlOutput.innerHTML, copyHtmlButton);
-        }
+            // --- Variables de Estado (Temporizador y Parpadeo) ---
+            let timerInterval = null;
+            let timeLeft = pomodoroDurationSetting;
+            let isRunning = false;
+            let currentState = 'pomodoro';
+            let pomodorosCompleted = 0;
+            let flashInterval = null;
 
-        // Copiar Markdown fuente
-        function copyMarkdown() {
-            copyToClipboard(markdownInput.value, copyMdButton);
-        }
+            // --- Funciones de Parpadeo ---
+            function startFlashing() {
+                if (flashInterval) return;
 
-        // Aplicar tema seleccionado
-        function applyTheme(event) {
-            const selectedTheme = event ? event.target.value : themeSelector.value;
-            htmlOutput.classList.remove('theme-light', 'theme-dark', 'theme-github');
-            htmlOutput.classList.add(`theme-${selectedTheme}`);
-        }
+                bodyElement.classList.add('is-flashing');
+                let flashOn = false;
+                flashInterval = setInterval(() => {
+                    flashOn = !flashOn;
+                    if (flashOn) {
+                        bodyElement.classList.add('flash-active');
+                    } else {
+                        bodyElement.classList.remove('flash-active');
+                    }
+                }, FLASH_INTERVAL_MS);
+                // Ya no hay detención automática con setTimeout
+                console.log("Iniciando parpadeo (continuo hasta interacción)...");
+            }
 
-        // --- Event Listeners ---
-        markdownInput.addEventListener('input', updatePreview);
-        saveButton.addEventListener('click', saveHtmlToFile);
-        copyHtmlButton.addEventListener('click', copyHtml);
-        copyMdButton.addEventListener('click', copyMarkdown);
-        themeSelector.addEventListener('change', applyTheme);
+            function stopFlashing() {
+                if (flashInterval) {
+                    clearInterval(flashInterval);
+                    flashInterval = null;
+                    bodyElement.classList.remove('is-flashing', 'flash-active');
+                    console.log("Parpadeo detenido.");
+                }
+            }
 
-        // --- Inicialización ---
-        applyTheme(); // Aplicar tema inicial basado en el valor seleccionado por defecto
-        updatePreview(); // Renderizar contenido inicial (si lo hubiera en el placeholder o textarea)
+            // --- Funciones Temporizador ---
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+            }
 
+            function durationForState(state) {
+                switch (state) {
+                    case 'shortBreak': return shortBreakDurationSetting;
+                    case 'longBreak': return longBreakDurationSetting;
+                    case 'pomodoro': default: return pomodoroDurationSetting;
+                }
+            }
+
+            function updateDisplay() {
+                timeLeftEl.textContent = formatTime(timeLeft);
+                pomodoroCountEl.textContent = `Pomodoros completados: ${pomodorosCompleted}`;
+
+                let stateText = "Trabajo";
+                if (currentState === 'shortBreak') stateText = "Descanso Corto";
+                else if (currentState === 'longBreak') stateText = "Descanso Largo";
+                timerLabelEl.textContent = stateText;
+
+                document.title = `${formatTime(timeLeft)} - ${stateText}`;
+
+                if (isRunning) {
+                    startPauseButton.textContent = 'Pausar';
+                    startPauseButton.classList.remove('btn-success', 'btn-primary');
+                    startPauseButton.classList.add('btn-warning');
+                } else {
+                    if (timeLeft < durationForState(currentState)) {
+                       startPauseButton.textContent = 'Reanudar';
+                       startPauseButton.classList.remove('btn-warning', 'btn-primary');
+                       startPauseButton.classList.add('btn-success');
+                    } else {
+                       startPauseButton.textContent = 'Iniciar';
+                       startPauseButton.classList.remove('btn-warning', 'btn-success');
+                       startPauseButton.classList.add('btn-primary');
+                    }
+                }
+            }
+
+            function stopAlertSound() {
+                if (isSoundPlaying) {
+                    alertSound.pause();
+                    alertSound.currentTime = 0;
+                    isSoundPlaying = false;
+                    console.log("Sonido de alerta detenido.");
+                }
+                stopFlashing(); // Detener parpadeo al detener el sonido (por interacción)
+            }
+
+             function decrementTime() {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateDisplay();
+                } else {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    isRunning = false;
+
+                    console.log("Iniciando sonido de alerta...");
+                    alertSound.play().catch(e => console.error("Error al reproducir sonido:", e));
+                    isSoundPlaying = true;
+                    startFlashing(); // Iniciar parpadeo visual (ahora continuo)
+
+                    switchState();
+                    updateDisplay();
+                }
+            }
+
+             function toggleTimer() {
+                stopAlertSound(); // Detiene sonido y parpadeo si estaban activos
+
+                if (isRunning) { // Pausar
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    isRunning = false;
+                } else { // Iniciar o Reanudar
+                    isRunning = true;
+                    if (timeLeft === durationForState(currentState) && !audioPrimed && alertSound.play) {
+                         console.log("Intentando preparar audio...");
+                         alertSound.play().then(() => {
+                             alertSound.pause();
+                             alertSound.currentTime = 0;
+                             audioPrimed = true;
+                             console.log("Contexto de audio preparado.");
+                         }).catch(e => {
+                             console.warn("Fallo al preparar audio:", e);
+                         });
+                    }
+                    timerInterval = setInterval(decrementTime, 1000);
+                }
+                updateDisplay();
+            }
+
+             function resetTimer() {
+                stopAlertSound(); // Detiene sonido y parpadeo si estaban activos
+                clearInterval(timerInterval);
+                timerInterval = null;
+                isRunning = false;
+                timeLeft = durationForState(currentState);
+                updateDisplay();
+            }
+
+            function switchState() {
+                if (currentState === 'pomodoro') {
+                    pomodorosCompleted++;
+                    if (pomodorosCompleted % POMODOROS_PER_LONG_BREAK === 0) {
+                        currentState = 'longBreak';
+                    } else {
+                        currentState = 'shortBreak';
+                    }
+                } else {
+                    currentState = 'pomodoro';
+                }
+                timeLeft = durationForState(currentState);
+            }
+
+            // --- Funciones Tema ---
+            function setTheme(theme) {
+                htmlElement.setAttribute('data-bs-theme', theme);
+                localStorage.setItem('theme', theme);
+
+                if (theme === 'dark') {
+                    themeIcon.classList.remove(moonIconClass);
+                    themeIcon.classList.add(sunIconClass);
+                    themeToggleButton.setAttribute('title', 'Cambiar a modo claro');
+                } else {
+                    themeIcon.classList.remove(sunIconClass);
+                    themeIcon.classList.add(moonIconClass);
+                    themeToggleButton.setAttribute('title', 'Cambiar a modo oscuro');
+                }
+                console.log(`Tema cambiado a: ${theme}`);
+            }
+
+            function toggleTheme() {
+                const currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                setTheme(newTheme);
+            }
+
+            // --- Funciones de Ajustes ---
+            function loadSettings() {
+                const savedPomodoro = localStorage.getItem('pomodoroDuration');
+                const savedShortBreak = localStorage.getItem('shortBreakDuration');
+                const savedLongBreak = localStorage.getItem('longBreakDuration');
+
+                pomodoroDurationSetting = Math.max(300, parseInt(savedPomodoro || pomodoroDurationSetting, 10));
+                shortBreakDurationSetting = Math.max(300, parseInt(savedShortBreak || shortBreakDurationSetting, 10));
+                longBreakDurationSetting = Math.max(300, parseInt(savedLongBreak || longBreakDurationSetting, 10));
+
+                localStorage.setItem('pomodoroDuration', pomodoroDurationSetting);
+                localStorage.setItem('shortBreakDuration', shortBreakDurationSetting);
+                localStorage.setItem('longBreakDuration', longBreakDurationSetting);
+
+                pomodoroDurationSelect.value = pomodoroDurationSetting;
+                shortBreakDurationSelect.value = shortBreakDurationSetting;
+                longBreakDurationSelect.value = longBreakDurationSetting;
+
+                if (!pomodoroDurationSelect.querySelector(`option[value="${pomodoroDurationSetting}"]`)) {
+                     pomodoroDurationSelect.value = 1500;
+                     pomodoroDurationSetting = 1500;
+                     localStorage.setItem('pomodoroDuration', pomodoroDurationSetting);
+                 }
+                 if (!shortBreakDurationSelect.querySelector(`option[value="${shortBreakDurationSetting}"]`)) {
+                     shortBreakDurationSelect.value = 300;
+                     shortBreakDurationSetting = 300;
+                     localStorage.setItem('shortBreakDuration', shortBreakDurationSetting);
+                 }
+                 if (!longBreakDurationSelect.querySelector(`option[value="${longBreakDurationSetting}"]`)) {
+                     longBreakDurationSelect.value = 900;
+                     longBreakDurationSetting = 900;
+                     localStorage.setItem('longBreakDuration', longBreakDurationSetting);
+                 }
+
+                console.log('Ajustes cargados/corregidos:', {
+                    pomodoro: pomodoroDurationSetting,
+                    shortBreak: shortBreakDurationSetting,
+                    longBreak: longBreakDurationSetting
+                 });
+            }
+
+            function handleSettingChange(event) {
+                const selectId = event.target.id;
+                const newValue = parseInt(event.target.value, 10);
+                let settingChanged = '';
+
+                switch (selectId) {
+                    case 'pomodoro-duration-select':
+                        pomodoroDurationSetting = newValue;
+                        localStorage.setItem('pomodoroDuration', newValue);
+                        settingChanged = 'pomodoro';
+                        console.log('Nueva duración Pomodoro:', newValue);
+                        break;
+                    case 'short-break-duration-select':
+                        shortBreakDurationSetting = newValue;
+                        localStorage.setItem('shortBreakDuration', newValue);
+                        settingChanged = 'shortBreak';
+                        console.log('Nueva duración Desc. Corto:', newValue);
+                        break;
+                    case 'long-break-duration-select':
+                        longBreakDurationSetting = newValue;
+                        localStorage.setItem('longBreakDuration', newValue);
+                        settingChanged = 'longBreak';
+                        console.log('Nueva duración Desc. Largo:', newValue);
+                        break;
+                }
+
+                if (!isRunning && currentState === settingChanged) {
+                    timeLeft = durationForState(currentState);
+                    updateDisplay();
+                }
+            }
+
+            // --- Inicialización ---
+            function init() {
+                loadSettings();
+
+                currentState = 'pomodoro';
+                timeLeft = pomodoroDurationSetting;
+                updateDisplay();
+
+                // Listeners
+                startPauseButton.addEventListener('click', toggleTimer);
+                resetButton.addEventListener('click', resetTimer);
+                themeToggleButton.addEventListener('click', toggleTheme);
+                pomodoroDurationSelect.addEventListener('change', handleSettingChange);
+                shortBreakDurationSelect.addEventListener('change', handleSettingChange);
+                longBreakDurationSelect.addEventListener('change', handleSettingChange);
+
+                // Tema inicial
+                const savedTheme = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+                setTheme(initialTheme);
+            }
+
+            init();
+        });
     </script>
 </body>
 </html>
